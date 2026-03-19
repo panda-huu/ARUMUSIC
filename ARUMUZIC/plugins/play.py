@@ -29,7 +29,7 @@ async def update_timer(chat_id, message_id, duration):
     while True:
         await asyncio.sleep(10)
         
-        # Agar queue delete ho jaye ya gaana skip ho jaye toh loop band karo
+        # Check if song was skipped or stopped
         if chat_id not in config.queues or not config.queues[chat_id]:
             break
             
@@ -48,21 +48,15 @@ async def update_timer(chat_id, message_id, duration):
                         InlineKeyboardButton("▢", callback_data="stop_cb")
                     ],
                     [
-                        InlineKeyboardButton("⏮ -20s", callback_data="seek_back"),
-                        InlineKeyboardButton("↺", callback_data="replay_cb"),
-                        InlineKeyboardButton("+20s ⏭", callback_data="seek_forward")
-                    ],
-                    [
                         InlineKeyboardButton("ᴏᴡɴᴇʀ↗", url="https://t.me/ll_PANDA_BBY_ll"),
                         InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ ↗", url="https://t.me/sxyaru")
                     ]
                 ])
             )
-            # Jab gaana khatam ho jaye
+            # Jab gaana khatam ho jaye - AUTO PLAY NEXT
             if elapsed_time >= duration:
-                # Purana gaana hatao
-                config.queues[chat_id].pop(0)
-                # Agla gaana play karo
+                if chat_id in config.queues and len(config.queues[chat_id]) > 0:
+                    config.queues[chat_id].pop(0) # Purana gana remove
                 await play_next(chat_id)
                 break
         except Exception:
@@ -79,10 +73,8 @@ async def play_next(chat_id: int):
     title, url, duration, user = song["title"], song["url"], song["duration"], song["by"]
     
     try:
-        # Stream change karo
         await call.change_stream(chat_id, AudioPiped(url, HighQualityAudio()))
         
-        # Naya Player UI
         text = (
             f"<b>❍ Nᴇxᴛ Sᴏɴɢ Sᴛᴀʀᴛᴇᴅ |</b>\n\n"
             f"<b>‣ Tɪᴛʟᴇ :</b> <a href='{url}'>{title}</a>\n"
@@ -93,16 +85,13 @@ async def play_next(chat_id: int):
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton(text=btn_prog, callback_data="prog_update")],
             [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
-            [InlineKeyboardButton("⏮ -20s", "seek_back"), InlineKeyboardButton("↺", "replay_cb"), InlineKeyboardButton("+20s ⏭", "seek_forward")],
             [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
         ])
         
         pmp = await bot.send_photo(chat_id, photo="https://files.catbox.moe/uyum1c.jpg", caption=text, reply_markup=buttons)
-        # Naya timer start karo
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
     except Exception as e:
         print(f"Error in play_next: {e}")
-        # Agar error aaye toh skip maar ke agla try karo
         if chat_id in config.queues:
             config.queues[chat_id].pop(0)
             await play_next(chat_id)
@@ -115,7 +104,7 @@ async def play_cmd(client, msg: Message):
     chat_id = msg.chat.id
     user_name = msg.from_user.first_name if msg.from_user else "User"
 
-    # Assistant Join Logic
+    # Assistant Check
     try:
         ast_info = await assistant.get_me()
         try:
@@ -143,7 +132,9 @@ async def play_cmd(client, msg: Message):
     # Queue Management
     if chat_id in config.queues and len(config.queues[chat_id]) > 0:
         config.queues[chat_id].append(song_data)
-        return await m.edit(f"✅ **ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (ᴘᴏsɪᴛɪᴏɴ #{len(config.queues[chat_id])-1})**\n🎵 **ᴛɪᴛʟᴇ:** {title}")
+        # Added 'Play Now' button in Queue message as requested
+        btn_queue = InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]])
+        return await m.edit(f"✅ **ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (ᴘᴏsɪᴛɪᴏɴ #{len(config.queues[chat_id])-1})**\n🎵 **ᴛɪᴛʟᴇ:** {title}", reply_markup=btn_queue)
 
     config.queues.setdefault(chat_id, []).append(song_data)
     await m.delete()
@@ -162,7 +153,6 @@ async def play_cmd(client, msg: Message):
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton(text=btn_prog, callback_data="prog_update")],
             [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
-            [InlineKeyboardButton("⏮ -20s", "seek_back"), InlineKeyboardButton("↺", "replay_cb"), InlineKeyboardButton("+20s ⏭", "seek_forward")],
             [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
         ])
 
