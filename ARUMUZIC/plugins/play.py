@@ -134,6 +134,10 @@ async def play_cmd(client, msg: Message):
 
     song_data = {"title": title, "url": stream_url, "duration": duration, "by": user_name}
     
+    # Check if assistant is actually in VC
+    if not await call.is_connected(chat_id):
+        config.queues.pop(chat_id, None)
+
     # Queue Management
     if chat_id in config.queues and len(config.queues[chat_id]) > 0:
         config.queues[chat_id].append(song_data)
@@ -141,7 +145,7 @@ async def play_cmd(client, msg: Message):
         btn_queue = InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]])
         return await m.edit(f"✅ **ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (ᴘᴏsɪᴛɪᴏɴ #{len(config.queues[chat_id])-1})**\n🎵 **ᴛɪᴛʟᴇ:** {title}", reply_markup=btn_queue)
 
-    config.queues.setdefault(chat_id, []).append(song_data)
+    config.queues[chat_id] = [song_data]
     await m.delete()
 
     # Play Initial Song
