@@ -138,13 +138,13 @@ async def play_cmd(client, msg: Message):
     if not await call.is_connected(chat_id):
         config.queues.pop(chat_id, None)
 
-    # Queue Management
-    if chat_id in config.queues and len(config.queues[chat_id]) > 0:
+    # Queue Management logic fix to avoid getting stuck
+    if chat_id in config.queues and config.queues[chat_id]:
         config.queues[chat_id].append(song_data)
-        # Added 'Play Now' button in Queue message as requested
         btn_queue = InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]])
         return await m.edit(f"✅ **ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (ᴘᴏsɪᴛɪᴏɴ #{len(config.queues[chat_id])-1})**\n🎵 **ᴛɪᴛʟᴇ:** {title}", reply_markup=btn_queue)
 
+    # Naya queue start karo
     config.queues[chat_id] = [song_data]
     await m.delete()
 
@@ -168,4 +168,6 @@ async def play_cmd(client, msg: Message):
         pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", caption=text, reply_markup=buttons)
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
     except Exception as e:
+        # Error aane par queue clear karo taaki agla attempt stuck na ho
+        config.queues.pop(chat_id, None)
         await client.send_message(chat_id, f"❌ **ᴇʀʀᴏʀ:** {e}")
