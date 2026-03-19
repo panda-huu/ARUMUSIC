@@ -10,7 +10,7 @@ BOT_NAME = "ARU"
 BOT_USERNAME = "sxyaru" 
 
 # Safe Owner ID check (Agar config mein nahi hai toh 0 rakho)
-OWNER_ID = getattr(config, "OWNER_ID", 0) 
+OWNER_ID = 8566803656
 
 OWNER_PROMPT = "You are ARU MUSIC BOT. The user talking to you is your OWNER and CREATOR. Be very respectful, loyal, and call him 'Sir' or 'Boss'. Use Hinglish."
 USER_PROMPT = f"You are {BOT_NAME}, a helpful and witty AI assistant. Respond in a friendly way. Sometimes use Hinglish."
