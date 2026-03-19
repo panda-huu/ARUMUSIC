@@ -165,5 +165,5 @@ async def play_cmd(client, msg: Message):
     ])
 
     await m.delete()
-    pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/uyum1c.jpg", caption=text, reply_markup=buttons)
+    pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", caption=text, reply_markup=buttons)
     asyncio.create_task(update_timer(chat_id, pmp.id, duration))
