@@ -1,3 +1,4 @@
+from ARUMUZIC.clients import bot, assistant, call
 from pyrogram import Client, filters
 from pyrogram.types import CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
 
