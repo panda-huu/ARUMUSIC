@@ -15,16 +15,26 @@ import config
 def fmt_time(seconds):
     minutes, seconds = divmod(seconds, 60)
     hours, minutes = divmod(minutes, 60)
-    return f"{hours:02}:{minutes:02}:{seconds:02}" if hours > 0 else f"{minutes:02}:{seconds:02}"
+    if hours > 0:
+        return f"{hours:02}:{minutes:02}:{seconds:02}"
+    return f"{minutes:02}:{seconds:02}"
 
 def gen_btn_progressbar(total_sec, current_sec):
+    # Pehle bar_length 12-15 thi, ab 6-8 karke dekho
     bar_length = 8 
+    
     if total_sec == 0: total_sec = 1
-    percentage = min(100, max(0, (current_sec / total_sec) * 100))
+    percentage = (current_sec / total_sec) * 100
+    percentage = min(100, max(0, percentage))
+    
     filled_blocks = int(percentage / (100 / bar_length))
+    
+    # Dot wala style (Image match)
     bar = "▬" * filled_blocks + "●" + "▬" * (bar_length - filled_blocks)
+    
     return f"{fmt_time(current_sec)} {bar} {fmt_time(total_sec)}"
 
+#UPDATE TIMER
 async def update_timer(chat_id, message_id, duration):
     start_time = time.time() 
     while True:
