@@ -2,14 +2,16 @@ import aiohttp
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatMemberStatus, ChatAction
-import config # Owner ID nikalne ke liye
+import config 
 
 # --- Configuration ---
 CHAT_ENABLED = [] 
-BOT_NAME = "aru" # Aapka bot name
-BOT_USERNAME = "ARU_xOPUSERBOT" # Aapka bot username (without @)
+BOT_NAME = "ARU" 
+BOT_USERNAME = "sxyaru" 
 
-# Owner ke liye alag prompt aur Normal users ke liye alag
+# Safe Owner ID check (Agar config mein nahi hai toh 0 rakho)
+OWNER_ID = getattr(config, "OWNER_ID", 0) 
+
 OWNER_PROMPT = "You are ARU MUSIC BOT. The user talking to you is your OWNER and CREATOR. Be very respectful, loyal, and call him 'Sir' or 'Boss'. Use Hinglish."
 USER_PROMPT = f"You are {BOT_NAME}, a helpful and witty AI assistant. Respond in a friendly way. Sometimes use Hinglish."
 
@@ -47,11 +49,13 @@ async def chatbot_reply(client, message: Message):
     if not text:
         return
 
-    # 1. Private Chat: Hamesha reply karega
-    # 2. Group Chat: Sirf tab reply karega jab /chaton ho AND (Tag kiya ho ya Name liya ho)
+    # Trigger Logic
+    bot_me = await client.get_me()
     is_mentioned = (
-        message.reply_to_message and message.reply_to_message.from_user.id == (await client.get_me()).id
-    ) or (BOT_NAME.lower() in text.lower()) or (BOT_USERNAME.lower() in text.lower())
+        (message.reply_to_message and message.reply_to_message.from_user.id == bot_me.id) or 
+        (BOT_NAME.lower() in text.lower()) or 
+        (BOT_USERNAME.lower() in text.lower())
+    )
 
     if message.chat.type != "private":
         if chat_id not in CHAT_ENABLED or not is_mentioned:
@@ -61,14 +65,14 @@ async def chatbot_reply(client, message: Message):
     try: await client.send_chat_action(chat_id, ChatAction.TYPING)
     except: pass
 
-    # Owner Check (Assuming OWNER_ID is in config.py)
-    is_owner = user_id == config.OWNER_ID 
+    # --- FIXED OWNER CHECK ---
+    is_owner = (user_id == OWNER_ID)
     prompt = OWNER_PROMPT if is_owner else USER_PROMPT
 
     try:
         full_query = f"{prompt}\n\nUser: {text}"
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://sxyaru.vercel.app/api/asked?query={full_query}") as r:
+            async with session.get(f"https://sxyaru.vercel.app/api/asked?query={quote(full_query)}") as r:
                 data = await r.json()
                 response = data.get("response") or data.get("reply") or data.get("message")
 
