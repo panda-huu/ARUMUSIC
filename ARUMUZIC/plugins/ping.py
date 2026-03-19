@@ -1,5 +1,6 @@
 import time
 import psutil
+from ARUMUZIC.clients import bot, assistant, call
 from datetime import datetime, timedelta
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
