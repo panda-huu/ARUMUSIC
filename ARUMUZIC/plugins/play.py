@@ -2,11 +2,11 @@ import asyncio
 import aiohttp
 import time
 from urllib.parse import quote
-from pyrogram.enums import ChatMemberStatus # Ye import zaroor check kar lena top pe
+from pyrogram.enums import ChatMemberStatus
 from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from pytgcalls.types import AudioPiped, HighQualityAudio
-from pytgcalls import PyTgCalls # Import this for decorator
+from pytgcalls import PyTgCalls
 from ARUMUZIC.clients import bot, assistant, call 
 import config
 
@@ -28,7 +28,7 @@ def gen_btn_progressbar(total_sec, current_sec):
     bar = "▰" * filled_blocks + "▱" * (bar_length - filled_blocks)
     return f"{fmt_time(current_sec)} {bar} {fmt_time(total_sec)}"
 
-# --- Play Next Function (Core) ---
+# --- Play Next Function ---
 async def play_next(chat_id: int):
     if chat_id not in config.queues or len(config.queues[chat_id]) <= 1:
         config.queues[chat_id] = []
@@ -36,9 +36,8 @@ async def play_next(chat_id: int):
         except: pass
         return
 
-    config.queues[chat_id].pop(0) # Purana gana remove
-    song = config.queues[chat_id][0] # Naya gana pick
-    
+    config.queues[chat_id].pop(0) 
+    song = config.queues[chat_id][0] 
     title, stream_url, duration, user_name = song["title"], song["url"], song["duration"], song["by"]
 
     try:
@@ -48,15 +47,9 @@ async def play_next(chat_id: int):
             await call.join_group_call(chat_id, AudioPiped(stream_url, HighQualityAudio()))
         
         text = (
-            f"<blockquote>"
-            f"<b>❍ ɴᴇxᴛ sᴏɴɢ sᴛʀᴇᴀᴍ sᴛᴀʀᴛᴇᴅ |</b>\n\n"
+            f"<blockquote><b>❍ ɴᴇxᴛ sᴏɴɢ sᴛʀᴇᴀᴍ sᴛᴀʀᴛᴇᴅ |</b>\n\n"
             f"<b>‣ Tɪᴛʟᴇ :</b> <a href='{stream_url}'>{title}</a>\n"
-            f"<b>‣ Dᴜʀᴀᴛɪᴏɴ :</b> <code>{fmt_time(duration)}</code>\n"
-            f"<b>‣ Rᴇǫᴜᴇsᴛᴇᴅ ʙʏ :</b> `{user_name}`\n"
-            f"<b>‣ ʙᴏᴛ ʙᴀsᴇᴅ ᴏɴ : ᴀʀᴜ x ᴊɪᴏsᴀᴠᴀɴ</b>\n"
-            f"<b>‣ ᴀᴘɪ ʙʏ: <a href='https://t.me/sxyaru'>ᴀʀᴜ × ᴀᴘɪ [ʙᴏᴛs]</a></b>\n"
-            f"<b>‣ ᴀᴘɪ ᴍᴀᴅᴇ ʙʏ: <a herf='href=https://t.me/ll_PANDA_BBY_ll'>ᴘᴀɴᴅᴀ-ʙᴀʙʏ</a></b>"
-            f"</blockquote>"
+            f"<b>‣ Rᴇǫᴜᴇsᴛᴇᴅ ʙʏ :</b> `{user_name}`</blockquote>"
         )
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton(text=gen_btn_progressbar(duration, 0), callback_data="prog_update")],
@@ -65,92 +58,76 @@ async def play_next(chat_id: int):
         ])
         pmp = await bot.send_photo(chat_id, photo="https://files.catbox.moe/uyum1c.jpg", caption=text, reply_markup=buttons)
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
-    except Exception as e:
-        print(f"Error in play_next: {e}")
+    except:
         await play_next(chat_id)
 
-# --- AUTO PLAY HANDLER (Magic Line) ---
 @call.on_stream_end()
 async def stream_end_handler(client, update):
-    chat_id = update.chat_id
-    await play_next(chat_id)
+    await play_next(update.chat_id)
 
-# --- Timer Logic ---
 async def update_timer(chat_id, message_id, duration):
     start_time = time.time()
     while True:
         await asyncio.sleep(15) 
-        if chat_id not in config.queues or not config.queues[chat_id]:
-            break
+        if chat_id not in config.queues or not config.queues[chat_id]: break
         elapsed_time = min(duration, int(time.time() - start_time))
         if elapsed_time >= duration: break 
-        
         try:
-            await bot.edit_message_reply_markup(
-                chat_id, message_id,
+            await bot.edit_message_reply_markup(chat_id, message_id,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(text=gen_btn_progressbar(duration, elapsed_time), callback_data="prog_update")],
-                    [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
-                    [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
-                ])
-            )
+                    [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")]
+                ]))
         except: break
 
-from pyrogram.enums import ChatMemberStatus # Ye import zaroor check kar lena top pe
-
+# --- MAIN PLAY COMMAND ---
 @Client.on_message(filters.command("play") & filters.group)
 async def play_cmd(client, msg: Message):
-    try:
-        await msg.delete()
-    except:
-        pass
+    try: await msg.delete()
+    except: pass
+    
     chat_id = msg.chat.id
     user_name = msg.from_user.first_name if msg.from_user else "User"
-
     if len(msg.command) < 2: return await msg.reply("❌ **ɢɪᴠᴇ ᴀ ǫᴜᴇʀʏ!**")
+    
     query = msg.text.split(None, 1)[1].strip()
     m = await msg.reply("<blockquote>🔎 <b>sᴇᴀʀᴄʜɪɴɢ...</b></blockquote>")
 
-    # --- 100% WORKING ASSISTANT CHECK ---
-    assistant_id = (await assistant.get_me()).id
+    # --- SMART ASSISTANT CHECK ---
+    ast_id = (await assistant.get_me()).id
+    is_joined = False
+    
     try:
-        # Check if assistant is in chat
-        get_ast = await client.get_chat_member(chat_id, assistant_id)
-        
-        # Agar assistant BANNED hai toh unban karke join karwao
-        if get_ast.status == ChatMemberStatus.BANNED:
-            await client.unban_chat_member(chat_id, assistant_id)
+        ast_member = await client.get_chat_member(chat_id, ast_id)
+        if ast_member.status == ChatMemberStatus.BANNED:
+            await client.unban_chat_member(chat_id, ast_id)
+            await m.edit("✅ **Assistant unbanned! Joining...**")
             invitelink = await client.export_chat_invite_link(chat_id)
             await assistant.join_chat(invitelink)
-            
-    except Exception:
-        # Agar get_chat_member fail hua (Matlab assistant group mein nahi hai)
+        is_joined = True
+    except:
+        # Assistant group mein nahi hai
         await m.edit("☎️ **Assistant joining group...**")
         try:
-            # Pehle invite link se try karo
-            invitelink = await client.export_chat_invite_link(chat_id)
-            await assistant.join_chat(invitelink)
-        except Exception:
-            # Agar link export fail ho (Bot admin nahi hai ya permission nahi hai)
             if msg.chat.username:
-                try:
-                    await assistant.join_chat(msg.chat.username)
-                except:
-                    return await m.edit("❌ **Mujhe 'Invite Users' permission do taaki assistant join ho sake!**")
+                await assistant.join_chat(msg.chat.username)
+                is_joined = True
             else:
-                return await m.edit("❌ **Mujhe 'Invite Users' permission do taaki assistant join ho sake!**")
+                invitelink = await client.export_chat_invite_link(chat_id)
+                await assistant.join_chat(invitelink)
+                is_joined = True
+        except:
+            return await m.edit("❌ **Mujhe Admin banao aur 'Invite Users' permission do!**")
 
-    # --- API Search (Ab ye queue ke liye aage badhega) ---
+    # --- API SEARCH ---
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://jio-saa-van.vercel.app/result/?query={quote(query)}", timeout=15) as r:
                 data = await r.json()
-    except Exception as e:
-        return await m.edit(f"❌ **sᴇᴀʀᴄʜ ᴇʀʀᴏʀ:** `{e}`")
+    except: return await m.edit("❌ **Search Error!**")
 
-    if not data: return await m.edit("❌ **ɴᴏ ʀᴇsᴜʟᴛs ғᴏᴜɴᴅ!**")
-
-
+    if not data: return await m.edit("❌ **No results!**")
+    
     track = data[0]
     title, duration = track.get("song"), int(track.get("duration", 0))
     stream_url = track.get("media_url") or track.get("download_url")
@@ -158,34 +135,29 @@ async def play_cmd(client, msg: Message):
 
     if chat_id not in config.queues: config.queues[chat_id] = []
 
+    # --- QUEUE LOGIC ---
     if len(config.queues[chat_id]) > 0:
         config.queues[chat_id].append(song_data)
-        btn_queue = InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]])
-        return await m.edit(f"<b>✅ ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (#{len(config.queues[chat_id])-1})</b>\n🎵 **ᴛɪᴛʟᴇ:** {title}", reply_markup=btn_queue)
+        return await m.edit(f"<b>✅ ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (#{len(config.queues[chat_id])-1})</b>\n🎵 **ᴛɪᴛʟᴇ:** {title}", 
+                            reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]]))
 
     config.queues[chat_id].append(song_data)
     await m.delete()
 
     try:
         await call.join_group_call(chat_id, AudioPiped(stream_url, HighQualityAudio()))
-        text = (
-            f"<blockquote>"
-            f"<b>❍ Sᴛᴀʀᴛᴇᴅ Sᴛʀᴇᴀᴍɪɴɢ |</b>\n\n"
-            f"<b>‣ Tɪᴛʟᴇ :</b> <a href='{stream_url}'>{title}</a>\n"
-            f"<b>‣ Dᴜʀᴀᴛɪᴏɴ :</b> <code>{fmt_time(duration)}</code>\n"
-            f"<b>‣ Rᴇǫᴜᴇsᴛᴇᴅ ʙʏ :</b> `{user_name}`\n"
-            f"<b>‣ ʙᴏᴛ ʙᴀsᴇᴅ ᴏɴ : ᴀʀᴜ x ᴊɪᴏsᴀᴠᴀɴ</b>\n"
-            f"<b>‣ ᴀᴘɪ ʙʏ: <a href='https://t.me/sxyaru'>ᴀʀᴜ × ᴀᴘɪ [ʙᴏᴛs]</a></b>\n"
-            f"<b>‣ ᴀᴘɪ ᴍᴀᴅᴇ ʙʏ: <a herf='href=https://t.me/ll_PANDA_BBY_ll'>ᴘᴀɴᴅᴀ-ʙᴀʙʏ</a></b>"
-            f"</blockquote>"
-        )
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton(text=gen_btn_progressbar(duration, 0), callback_data="prog_update")],
             [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
             [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
         ])
-        pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", caption=text, reply_markup=buttons)
+        pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", 
+            caption=f"<blockquote><b>❍ Sᴛᴀʀᴛᴇᴅ Sᴛʀᴇᴀᴍɪɴɢ |</b>\n\n<b>‣ Tɪᴛʟᴇ :</b> {title}\n<b>‣ Rᴇǫᴜᴇsᴛᴇᴅ ʙʏ :</b> `{user_name}`</blockquote>", 
+            reply_markup=buttons)
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
     except Exception as e:
+        if "No active group call" in str(e):
+            return await client.send_message(chat_id, "❌ **Pehle Voice Chat start karo bhaya!**")
         config.queues[chat_id] = []
-        await client.send_message(chat_id, f"❌ **ᴇʀʀᴏʀ:** {e}")
+        await client.send_message(chat_id, f"❌ **Error:** {e}")
+
