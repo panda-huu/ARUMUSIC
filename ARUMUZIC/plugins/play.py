@@ -101,6 +101,33 @@ async def play_cmd(client, msg: Message):
     query = msg.text.split(None, 1)[1].strip()
     m = await msg.reply("<blockquote>🔎 <b>sᴇᴀʀᴄʜɪɴɢ...</b></blockquote>")
 
+    # --- ADVANCED ASSISTANT JOIN/UNBAN LOGIC ---
+    try:
+        assistant_id = (await assistant.get_me()).id
+        try:
+            # Check agar assistant group mein hai
+            get_ast = await client.get_chat_member(chat_id, assistant_id)
+            if get_ast.status == ChatMemberStatus.BANNED:
+                # Agar Banned hai toh Unban karo
+                await client.unban_chat_member(chat_id, assistant_id)
+                await m.edit("✅ **Assistant unbanned! Joining now...**")
+        except:
+            # Agar assistant group mein nahi hai
+            await m.edit("☎️ **Assistant joining group...**")
+            try:
+                # Private group ke liye invite link
+                invitelink = await client.export_chat_invite_link(chat_id)
+                await assistant.join_chat(invitelink)
+            except:
+                # Public group ke liye username se join
+                if msg.chat.username:
+                    await assistant.join_chat(msg.chat.username)
+                else:
+                    return await m.edit("❌ **Mujhe Admin banao aur 'Invite Users' permission do taaki assistant join ho sake!**")
+    except Exception as e:
+        return await m.edit(f"❌ **Assistant Join Error:** `{e}`")
+
+    # --- API Search ---
     try:
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://jio-saa-van.vercel.app/result/?query={quote(query)}", timeout=15) as r:
@@ -109,6 +136,9 @@ async def play_cmd(client, msg: Message):
         return await m.edit(f"❌ **sᴇᴀʀᴄʜ ᴇʀʀᴏʀ:** `{e}`")
 
     if not data: return await m.edit("❌ **ɴᴏ ʀᴇsᴜʟᴛs ғᴏᴜɴᴅ!**")
+    
+    # ... (Baaki ka Queue aur Play logic same rahega jo pehle diya tha) ...
+
     
     track = data[0]
     title, duration = track.get("song"), int(track.get("duration", 0))
