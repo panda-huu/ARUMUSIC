@@ -17,7 +17,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
         help_text = (
             "<b> ʙᴏᴛ ʜᴇʟᴘ ᴍᴇɴᴜ</b>\n\n"
             "<b>/play</b> [ꜱᴏɴɢ ɴᴀᴍᴇ]\n"  
-            "<b>/ping</b> - Stats check"
+            "<b>/ping</b> - ᴘɪɴɢɪɴɢ\n\n"
+            "<b>/chaton</b> - ᴄʜᴀᴛʙᴏᴛ ᴏɴ\n"
+            "<b>/chatoff</b> - ᴄʜᴀᴛʙᴏᴛ ᴏғғ"
         )
         await query.message.edit_caption(
             caption=help_text,
