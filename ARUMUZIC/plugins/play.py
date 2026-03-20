@@ -1,4 +1,4 @@
-import asyncio 
+ asyncio 
 import aiohttp
 import time
 from urllib.parse import quote
@@ -54,7 +54,6 @@ async def play_next(chat_id: int):
         buttons = InlineKeyboardMarkup([
             [InlineKeyboardButton(text=gen_btn_progressbar(duration, 0), callback_data="prog_update")],
             [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
-            [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
         ])
         pmp = await bot.send_photo(chat_id, photo="https://files.catbox.moe/uyum1c.jpg", caption=text, reply_markup=buttons)
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
@@ -64,19 +63,13 @@ async def play_next(chat_id: int):
 @call.on_stream_end()
 async def stream_end_handler(client, update):
     chat_id = update.chat_id
-    
-    # Check karo agar queue mein aur gaane hain (Current ko chhod kar)
     if chat_id in config.queues and len(config.queues[chat_id]) > 1:
-        # Agla gaana bajao
         await play_next(chat_id)
     else:
-        # Agar koi gaana nahi bacha, toh sab saaf karo
         try:
-            config.queues[chat_id] = [] # Queue reset
+            config.queues[chat_id] = [] 
             await call.leave_group_call(chat_id)
-        except:
-            pass
-
+        except: pass
 
 async def update_timer(chat_id, message_id, duration):
     start_time = time.time()
@@ -89,12 +82,13 @@ async def update_timer(chat_id, message_id, duration):
             await bot.edit_message_reply_markup(chat_id, message_id,
                 reply_markup=InlineKeyboardMarkup([
                     [InlineKeyboardButton(text=gen_btn_progressbar(duration, elapsed_time), callback_data="prog_update")],
-                    [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")]
+                    [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
+                    [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
                 ]))
         except: break
 
 # --- MAIN PLAY COMMAND ---
-@Client.on_message(filters.command("play") & filters.group)
+@bot.on_message(filters.command("play") & filters.group)
 async def play_cmd(client, msg: Message):
     try: await msg.delete()
     except: pass
@@ -106,31 +100,25 @@ async def play_cmd(client, msg: Message):
     query = msg.text.split(None, 1)[1].strip()
     m = await msg.reply("<blockquote>🔎 <b>sᴇᴀʀᴄʜɪɴɢ...</b></blockquote>")
 
-    # --- SMART ASSISTANT CHECK ---
+    # --- ULTIMATE ASSISTANT CHECK ---
     ast_id = (await assistant.get_me()).id
-    is_joined = False
-    
     try:
         ast_member = await client.get_chat_member(chat_id, ast_id)
         if ast_member.status == ChatMemberStatus.BANNED:
             await client.unban_chat_member(chat_id, ast_id)
-            await m.edit("✅ **Assistant unbanned! Joining...**")
             invitelink = await client.export_chat_invite_link(chat_id)
             await assistant.join_chat(invitelink)
-        is_joined = True
-    except:
-        # Assistant group mein nahi hai
-        await m.edit("☎️ **Assistant joining group...**")
+    except Exception:
+        # Agar error aaya (matlab assistant nahi hai), tabhi join ki koshish karega
         try:
             if msg.chat.username:
                 await assistant.join_chat(msg.chat.username)
-                is_joined = True
             else:
                 invitelink = await client.export_chat_invite_link(chat_id)
                 await assistant.join_chat(invitelink)
-                is_joined = True
-        except:
-            return await m.edit("❌ **Mujhe Admin banao aur 'Invite Users' permission do!**")
+        except Exception:
+            # Silent check: Agar assistant already in chat hai toh ye fail hoga, hum ise ignore karenge
+            pass
 
     # --- API SEARCH ---
     try:
@@ -148,7 +136,6 @@ async def play_cmd(client, msg: Message):
 
     if chat_id not in config.queues: config.queues[chat_id] = []
 
-    # --- QUEUE LOGIC ---
     if len(config.queues[chat_id]) > 0:
         config.queues[chat_id].append(song_data)
         return await m.edit(f"<b>✅ ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (#{len(config.queues[chat_id])-1})</b>\n🎵 **ᴛɪᴛʟᴇ:** {title}", 
@@ -164,7 +151,7 @@ async def play_cmd(client, msg: Message):
             [InlineKeyboardButton("▷", "resume_cb"), InlineKeyboardButton("Ⅱ", "pause_cb"), InlineKeyboardButton("⏭", "skip_cb"), InlineKeyboardButton("▢", "stop_cb")],
             [InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")]
         ])
-        pmp = await client.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", 
+        pmp = await bot.send_photo(chat_id, photo="https://files.catbox.moe/cu442f.jpg", 
             caption=f"<blockquote><b>❍ Sᴛᴀʀᴛᴇᴅ Sᴛʀᴇᴀᴍɪɴɢ |</b>\n\n<b>‣ Tɪᴛʟᴇ :</b> {title}\n<b>‣ Rᴇǫᴜᴇsᴛᴇᴅ ʙʏ :</b> `{user_name}`</blockquote>", 
             reply_markup=buttons)
         asyncio.create_task(update_timer(chat_id, pmp.id, duration))
