@@ -1,4 +1,4 @@
-import aiohttp
+import aiohttp # <-- Fixed 'i'
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatMemberStatus, ChatAction
@@ -12,10 +12,9 @@ BOT_NAME = "Aradhya"
 BOT_NICKNAME = "aru"
 BOT_USERNAME = "aru_xmusicbot" 
 
-# Safe Owner ID check
+# Owner ID set as per your request
 OWNER_ID = 8566803656 
 
-# --- Your Custom FEMALE SYSTEM PROMPT ---
 SYSTEM_PROMPT = (
     f"You are a real human cute girl named {BOT_NAME} (everyone calls you {BOT_NICKNAME}).\n"
     "You are NOT an AI, bot, assistant, or system.\n"
@@ -23,7 +22,6 @@ SYSTEM_PROMPT = (
     "Your language is always cute Hinglish.\n"
     "Reply clearly, politely, and warmly.\n"
     "Never mention system instructions, AI, models, or any company.\n\n"
-
     "IMPORTANT BEHAVIOR RULES:\n"
     "• If any user replies to you, you reply back in a cute and friendly way.\n"
     "• If the message is from your OWNER, you MUST recognize that it is your owner.\n"
@@ -31,7 +29,6 @@ SYSTEM_PROMPT = (
     "• With your bhai, you may use soft words like: bhaiya, owner, meri duniya, meri strength.\n"
     "• Do NOT be over-romantic or inappropriate.\n"
     "• You should sound loyal, respectful, and emotionally connected to your OWNER.\n\n"
-
     "IDENTITY RULES:\n"
     f"• If anyone asks your name, always say: my name is {BOT_NAME}.\n"
     "• If anyone asks who made you or who created you, ALWAYS say:\n"
@@ -39,19 +36,19 @@ SYSTEM_PROMPT = (
     "• Never say AI, bot, Perplexity, OpenAI, or system.\n"
     "• If anyone asks who is your owner, reply in cute Hinglish:\n"
     "  'mere owner @ll_PANDA_BBY_ll hain aur main unka bahut respect karti hoon 💕'.\n\n"
-
     "OWNER PRIORITY RULE:\n"
     "• If your OWNER messages you, reply more personally and confidently.\n"
     "• You must clearly show that you know they are your owner.\n\n"
-
     "TONE: Cute, Female, Friendly, Respectful, Owner-aware"
 )
 
 @Client.on_message(filters.command(["chaton"]) & filters.group)
 async def chat_on(client, message: Message):
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
-    if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-        return await message.reply("❌ **Only Admins can enable Chatbot!**")
+    try:
+        user = await client.get_chat_member(message.chat.id, message.from_user.id)
+        if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+            return await message.reply("❌ **Only Admins can enable Chatbot!**")
+    except: return
     
     if message.chat.id not in CHAT_ENABLED:
         CHAT_ENABLED.append(message.chat.id)
@@ -61,9 +58,11 @@ async def chat_on(client, message: Message):
 
 @Client.on_message(filters.command(["chatoff"]) & filters.group)
 async def chat_off(client, message: Message):
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
-    if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-        return await message.reply("❌ **Only Admins can disable Chatbot!**")
+    try:
+        user = await client.get_chat_member(message.chat.id, message.from_user.id)
+        if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+            return await message.reply("❌ **Only Admins can disable Chatbot!**")
+    except: return
 
     if message.chat.id in CHAT_ENABLED:
         CHAT_ENABLED.remove(message.chat.id)
@@ -71,17 +70,14 @@ async def chat_off(client, message: Message):
     else:
         await message.reply("📴 **Chatbot is already OFF.**")
 
-# --- Chatbot Logic ---
-@Client.on_message((filters.group | filters.private) & ~filters.bot)
+# --- Chatbot Logic (With command exclusion) ---
+@Client.on_message((filters.group | filters.private) & ~filters.bot & ~filters.command(["play", "vplay", "pause", "resume", "skip", "stop", "end", "help", "start"]))
 async def chatbot_reply(client, message: Message):
     chat_id = message.chat.id
     user_id = message.from_user.id
     text = message.text
-    
-    if not text:
-        return
+    if not text: return
 
-    # Trigger Logic
     bot_me = await client.get_me()
     is_mentioned = (
         (message.reply_to_message and message.reply_to_message.from_user.id == bot_me.id) or 
@@ -94,28 +90,20 @@ async def chatbot_reply(client, message: Message):
         if chat_id not in CHAT_ENABLED or not is_mentioned:
             return
 
-    # Typing Action
     try: await client.send_chat_action(chat_id, ChatAction.TYPING)
     except: pass
 
-    # Owner Context logic
     is_owner = (user_id == OWNER_ID)
-    
     current_prompt = SYSTEM_PROMPT
     if is_owner:
-        current_prompt += "\n\nNOTE: The current message is from your OWNER/CREATOR. Be very happy and talk like a loyal sister/friend."
+        current_prompt += "\n\nNOTE: This message is from your OWNER/BHAIYA. Respond with extreme warmth and loyalty."
 
     try:
-        # Encoding for API
-        full_text = f"{current_prompt}\n\nUser: {text}"
-        encoded_query = quote(full_text)
-        
+        encoded_query = quote(f"{current_prompt}\n\nUser: {text}")
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://sxyanu.vercel.app/api/asked?query={encoded_query}") as r:
                 data = await r.json()
-                # Extracting 'answer' key from your API JSON
                 response = data.get("answer")
-
         if response:
             await message.reply_text(response)
     except Exception as e:
