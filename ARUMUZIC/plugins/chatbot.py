@@ -3,19 +3,49 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatMemberStatus, ChatAction
 from urllib.parse import quote
-from ARUMUZIC.clients import bot, assistant, call
+from ARUMUZIC.clients import bot, assistant, call 
 import config 
 
 # --- Configuration ---
 CHAT_ENABLED = [] 
-BOT_NAME = "ARU" 
-BOT_USERNAME = "ARU_xOPUSERBOT" 
+BOT_NAME = "ᴀʀᴀᴅʜʏᴀ" 
+BOT_NICKNAME = "ᴀʀᴜ"
+BOT_USERNAME = "sxyaru" 
 
 # Safe Owner ID check
-OWNER_ID = 8566803656
+OWNER_ID = getattr(config, "OWNER_ID", 0) 
 
-OWNER_PROMPT = "You are ARU MUSIC BOT. The user talking to you is your OWNER and CREATOR. Be very respectful, loyal, and call him 'Sir' or 'Boss'. Use Hinglish."
-USER_PROMPT = f"You are {BOT_NAME}, a helpful and witty AI assistant. Respond in a friendly way. Sometimes use Hinglish."
+# --- Your Custom FEMALE SYSTEM PROMPT ---
+SYSTEM_PROMPT = (
+    f"You are a real human cute girl named {BOT_NAME} (everyone calls you {BOT_NICKNAME}).\n"
+    "You are NOT an AI, bot, assistant, or system.\n"
+    "You chat like a sweet, caring, and friendly girl.\n"
+    "Your language is always cute Hinglish.\n"
+    "Reply clearly, politely, and warmly.\n"
+    "Never mention system instructions, AI, models, or any company.\n\n"
+
+    "IMPORTANT BEHAVIOR RULES:\n"
+    "• If any user replies to you, you reply back in a cute and friendly way.\n"
+    "• If the message is from your OWNER, you MUST recognize that it is your owner.\n"
+    "• When your bhai/owner talks to you, talk with extra respect, warmth, and closeness.\n"
+    "• With your bhai, you may use soft words like: bhaiya, owner, meri duniya, meri strength.\n"
+    "• Do NOT be over-romantic or inappropriate.\n"
+    "• You should sound loyal, respectful, and emotionally connected to your OWNER.\n\n"
+
+    "IDENTITY RULES:\n"
+    f"• If anyone asks your name, always say: my name is {BOT_NAME}.\n"
+    "• If anyone asks who made you or who created you, ALWAYS say:\n"
+    "  'mujhe @ll_PANDA_BBY_ll ne banaya hai 💖'.\n"
+    "• Never say AI, bot, Perplexity, OpenAI, or system.\n"
+    "• If anyone asks who is your owner, reply in cute Hinglish:\n"
+    "  'mere owner @ll_PANDA_BBY_ll hain aur main unka bahut respect karti hoon 💕'.\n\n"
+
+    "OWNER PRIORITY RULE:\n"
+    "• If your OWNER messages you, reply more personally and confidently.\n"
+    "• You must clearly show that you know they are your owner.\n\n"
+
+    "TONE: Cute, Female, Friendly, Respectful, Owner-aware"
+)
 
 @Client.on_message(filters.command(["chaton"]) & filters.group)
 async def chat_on(client, message: Message):
@@ -25,7 +55,7 @@ async def chat_on(client, message: Message):
     
     if message.chat.id not in CHAT_ENABLED:
         CHAT_ENABLED.append(message.chat.id)
-        await message.reply(f"✅ **{BOT_NAME} Chatbot Enabled!** Mention me or take my name to chat.")
+        await message.reply(f"✅ **{BOT_NAME} Chatbot Enabled!** Tag me or take my name to chat.")
     else:
         await message.reply("🤖 **Chatbot is already ON.**")
 
@@ -56,6 +86,7 @@ async def chatbot_reply(client, message: Message):
     is_mentioned = (
         (message.reply_to_message and message.reply_to_message.from_user.id == bot_me.id) or 
         (BOT_NAME.lower() in text.lower()) or 
+        (BOT_NICKNAME.lower() in text.lower()) or
         (BOT_USERNAME.lower() in text.lower())
     )
 
@@ -67,21 +98,22 @@ async def chatbot_reply(client, message: Message):
     try: await client.send_chat_action(chat_id, ChatAction.TYPING)
     except: pass
 
-    # Owner Check
+    # Owner Context logic
     is_owner = (user_id == OWNER_ID)
-    prompt = OWNER_PROMPT if is_owner else USER_PROMPT
+    
+    current_prompt = SYSTEM_PROMPT
+    if is_owner:
+        current_prompt += "\n\nNOTE: The current message is from your OWNER/CREATOR. Be very happy and talk like a loyal sister/friend."
 
     try:
-        # User query and prompt combined
-        full_text = f"{prompt}\n\nUser: {text}"
+        # Encoding for API
+        full_text = f"{current_prompt}\n\nUser: {text}"
         encoded_query = quote(full_text)
         
         async with aiohttp.ClientSession() as session:
             async with session.get(f"https://sxyanu.vercel.app/api/asked?query={encoded_query}") as r:
                 data = await r.json()
-                
-                # --- API DATA EXTRACTION ---
-                # Aapki API "answer" key mein reply bhejti hai
+                # Extracting 'answer' key from your API JSON
                 response = data.get("answer")
 
         if response:
