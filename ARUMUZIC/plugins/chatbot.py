@@ -76,7 +76,7 @@ async def chatbot_reply(client, message: Message):
         encoded_query = quote(f"{prompt}\n\nUser: {text}")
         
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"https://sxyaru.vercel.app/api/asked?query={encoded_query}") as r:
+            async with session.get(f"https://sxyanu.vercel.app/api/asked?query={encoded_query}") as r:
                 data = await r.json()
                 # Try multiple keys because some APIs change them
                 response = data.get("response") or data.get("reply") or data.get("message")
