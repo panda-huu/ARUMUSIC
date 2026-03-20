@@ -22,7 +22,7 @@ def fmt_time(seconds):
     return f"{hours:02}:{minutes:02}:{seconds:02}" if hours > 0 else f"{minutes:02}:{seconds:02}"
 
 def gen_btn_progressbar(total_sec, current_sec):
-    bar_length = 10 
+    bar_length = 9 
     if total_sec <= 0: total_sec = 1
     percentage = min(100, max(0, (current_sec / total_sec) * 100))
     filled_blocks = int(percentage / (100 / bar_length))
@@ -33,7 +33,6 @@ def gen_btn_progressbar(total_sec, current_sec):
 def get_player_buttons(duration, elapsed=0):
     return InlineKeyboardMarkup([
         [InlineKeyboardButton(text=gen_btn_progressbar(duration, elapsed), callback_data="prog_update")],
-        [InlineKeyboardButton(f"{fmt_time(elapsed)} ━━━🎵━━━ {fmt_time(duration)}", callback_data="nothing")],
         [
             InlineKeyboardButton("▷", "resume_cb"), 
             InlineKeyboardButton("Ⅱ", "pause_cb"), 
@@ -41,13 +40,7 @@ def get_player_buttons(duration, elapsed=0):
             InlineKeyboardButton("⏭", "skip_cb"), 
             InlineKeyboardButton("▢", "stop_cb")
         ],
-        [
-            InlineKeyboardButton("-20s", "back_cb"), 
-            InlineKeyboardButton("🔀", "shuffle_cb"), 
-            InlineKeyboardButton("🔳", "panel_cb"), 
-            InlineKeyboardButton("📡", "stream_cb"), 
-            InlineKeyboardButton("+20s", "forward_cb")
-        ],
+        
         [
             InlineKeyboardButton("ᴏᴡɴᴇʀ", url="https://t.me/ll_PANDA_BBY_ll"), 
             InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru")
