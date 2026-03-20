@@ -135,14 +135,17 @@ async def play_cmd(client, msg: Message):
     stream_url = track.get("media_url") or track.get("download_url")
     song_data = {"title": title, "url": stream_url, "duration": duration, "by": user_name}
 
-        # --- SMART QUEUE LOGIC (Bypass if VC is Empty) ---
-    if chat_id in config.queues and len(config.queues[chat_id]) > 0:
-        # Check karo agar assistant sach mein VC mein hai
+    # --- MISSING LINE (FOUND IT!) ---
+    if chat_id not in config.queues: 
+        config.queues[chat_id] = []
+
+    # --- SMART QUEUE LOGIC ---
+    if len(config.queues[chat_id]) > 0:
         try:
-            # Agar assistant VC mein nahi hai (Exception aayegi), toh direct bajao
+            # Check agar assistant sach mein VC mein hai
             await call.get_call(chat_id) 
             
-            # Agar yahan tak aaya matlab VC active hai, toh queue mein dalo
+            # Agar VC active hai, toh queue mein dalo
             config.queues[chat_id].append(song_data)
             return await m.edit(
                 f"<b>✅ ᴀᴅᴅᴇᴅ ᴛᴏ ǫᴜᴇᴜᴇ (#{len(config.queues[chat_id])-1})</b>\n"
@@ -150,12 +153,11 @@ async def play_cmd(client, msg: Message):
                 reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("▷ ᴘʟᴀʏ ɴᴏᴡ", callback_data="skip_cb")]])
             )
         except:
-            # Agar assistant VC mein nahi hai, toh purani queue saaf karo aur direct bajao
+            # VC khali hai, toh purana kachra saaf karo
             config.queues[chat_id] = []
 
     config.queues[chat_id].append(song_data)
     await m.delete()
-
 
     # --- STREAM START LOGIC ---
     try:
@@ -191,5 +193,6 @@ async def play_cmd(client, msg: Message):
             return await bot.send_message(chat_id, "❌ **Pehle Voice Chat start karo bhaya!**")
         config.queues[chat_id] = []
         await bot.send_message(chat_id, f"❌ **Error:** {e}")
+
 
 
