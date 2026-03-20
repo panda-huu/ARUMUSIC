@@ -1,4 +1,4 @@
-import random # <-- Iska 'i' small kar diya
+import random
 import asyncio
 from ARUMUZIC.clients import bot 
 from pyrogram import filters
@@ -29,8 +29,11 @@ WELCOME_TEXT = """🌸✨ ──────────────────
 🌸✨ ──────────────────── ✨🌸  
 """
 
-@bot.on_message(filters.new_chat_members & filters.group)
+@bot.on_message(filters.new_chat_members & filters.group, group=10) # group=10 dala taaki dusre filters se clash na ho
 async def welcome_user(client, msg: Message):
+    # DEBUG PRINT: Terminal mein dekho ye line aa rahi hai ya nahi
+    print(f"--- DEBUG: New Member Event in {msg.chat.title} ---")
+
     for user in msg.new_chat_members:
         if user.is_self:
             continue
@@ -55,7 +58,7 @@ async def welcome_user(client, msg: Message):
                 ]
             ])
 
-            wel_msg = await client.send_photo(
+            wel_msg = await bot.send_photo( # Yahan 'bot' use kiya direct
                 chat_id=msg.chat.id,
                 photo=photo,
                 caption=caption,
