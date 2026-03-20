@@ -1,12 +1,11 @@
 import time
 import psutil
 from datetime import datetime
-from pyrogram import filters
+from pyrogram import Client, filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from ARUMUZIC.clients import bot 
 import config
 
-# Variable name sahi kar diya
+# Startup fallback variable
 START_TIME = datetime.now()
 
 def get_readable_time(seconds: int) -> str:
@@ -32,23 +31,28 @@ def get_readable_time(seconds: int) -> str:
     ping_time += ":".join(time_list)
     return ping_time
 
-@bot.on_message(filters.command("ping") & ~filters.bot)
-async def ping_cmd(client, msg: Message):
+@Client.on_message(filters.command("ping") & ~filters.bot)
+async def ping_cmd(client: Client, msg: Message):
+    # Command delete karne ka try karo (Admin permission chahiye)
     try:
         await msg.delete()
     except:
         pass
 
     start_time = time.time()
+    
+    # Message reply text
     m = await msg.reply_text("<code>ᴘɪɴɢɪɴɢ..</code>")
     
+    # Latency
     latency = round((time.time() - start_time) * 1000, 2)
     
-    # Uptime logic fixed (Using START_TIME)
+    # Uptime logic (Dono jagah check karega)
     bot_uptime = getattr(config, "BOT_START_TIME", START_TIME)
     uptime_sec = (datetime.now() - bot_uptime).total_seconds()
     uptime = get_readable_time(int(uptime_sec))
     
+    # System Stats
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
     disk = psutil.disk_usage('/').percent
@@ -75,13 +79,16 @@ async def ping_cmd(client, msg: Message):
     PING_IMG = "https://files.catbox.moe/nacfzm.jpg" 
     
     try:
+        # Photo bhejte hain
         await client.send_photo(
             msg.chat.id,
             photo=PING_IMG,
             caption=text,
             reply_markup=buttons
         )
+        # Purana "Pinging..." text delete kar do
         await m.delete()
     except Exception as e:
-        print(f"Ping Photo Error: {e}")
+        # Agar photo fail ho toh text edit kar do
+        print(f"Ping Error: {e}")
         await m.edit(text, reply_markup=buttons)
