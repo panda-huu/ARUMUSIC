@@ -35,6 +35,8 @@ def get_readable_time(seconds: int) -> str:
 # DHYAN DO: Yahan @bot.on_message hona chahiye
 @bot.on_message(filters.command("ping") & ~filters.bot)
 async def ping_cmd(client, message: Message):
+    try: await msg.delete()
+    except: pass
     start_time = time.time()
     
     # Reply text
