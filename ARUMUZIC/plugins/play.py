@@ -67,13 +67,17 @@ async def play_next(chat_id: int):
         except: pass
         return
 
-    config.queues[chat_id].pop(0) # Purana gaana nikalo
-    song = config.queues[chat_id][0] # Ab jo top par hai wo bajao
-    
+    config.queues[chat_id].pop(0) 
+    song = config.queues[chat_id][0] 
     title, stream_url, duration, user_name = song["title"], song["url"], song["duration"], song["by"]
 
     try:
-        await call.change_stream(chat_id, AudioPiped(stream_url, HighQualityAudio()))
+        # Phele change karne ki koshish karo
+        try:
+            await call.change_stream(chat_id, AudioPiped(stream_url, HighQualityAudio()))
+        except:
+            # Agar change fail ho (call active na ho), toh join karo
+            await call.join_group_call(chat_id, AudioPiped(stream_url, HighQualityAudio()))
         text = (
             f"<blockquote>"
             f"<b>❍ ɴᴇxᴛ sᴏɴɢ sᴛʀᴇᴀᴍ sᴛᴀʀᴛᴇᴅ |</b>\n\n"
