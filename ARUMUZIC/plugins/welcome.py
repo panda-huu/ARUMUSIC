@@ -1,7 +1,7 @@
 import random
 import asyncio
-from ARUMUZIC.clients import bot, assistant, call
-from pyrogram import Client, filters
+from ARUMUZIC.clients import bot # Bot instance import kiya
+from pyrogram import filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 
 # --- Random Welcome Images ---
@@ -30,13 +30,12 @@ WELCOME_TEXT = """🌸✨ ──────────────────
 🌸✨ ──────────────────── ✨🌸  
 """
 
-@Client.on_message(filters.new_chat_members & filters.group) # 👈 @bot nahi, @Client
+# FIXED: @bot use kiya taaki plugins mein load ho
+@bot.on_message(filters.new_chat_members & filters.group)
 async def welcome_user(client, msg: Message):
-    # Terminal mein status dikhane ke liye
-    print(f"DEBUG: New member detected in {msg.chat.title}")
-
     for user in msg.new_chat_members:
-        if user.is_self: # Bot khud join kare toh welcome skip karega
+        # Agar bot khud join kare toh welcome nahi karega
+        if user.is_self:
             continue
             
         try:
@@ -46,7 +45,7 @@ async def welcome_user(client, msg: Message):
             
             photo = random.choice(WELCOME_IMAGES)
             
-            # Format text with user details
+            # Text formatting
             caption = WELCOME_TEXT.format(
                 name=name, 
                 user_id=user_id, 
@@ -60,7 +59,7 @@ async def welcome_user(client, msg: Message):
                 ]
             ])
 
-            # Photo send karna (client argument use karke)
+            # Photo send karna
             wel_msg = await client.send_photo(
                 chat_id=msg.chat.id,
                 photo=photo,
@@ -68,9 +67,12 @@ async def welcome_user(client, msg: Message):
                 reply_markup=buttons
             )
 
-            # 60 Seconds baad auto-delete
+            # 60 Seconds baad auto-delete (Optional: Isse group saaf rehta hai)
             await asyncio.sleep(60)
-            await wel_msg.delete()
+            try:
+                await wel_msg.delete()
+            except:
+                pass
 
         except Exception as e:
             print(f"[WELCOME ERROR] {e}")
