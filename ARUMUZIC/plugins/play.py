@@ -113,6 +113,7 @@ async def update_timer(chat_id, message_id, duration):
         except: break
 
 # --- MAIN PLAY COMMAND ---
+# --- MAIN PLAY COMMAND ---
 @bot.on_message(filters.command("play") & filters.group)
 async def play_cmd(client, msg: Message):
     try: await msg.delete()
@@ -153,17 +154,26 @@ async def play_cmd(client, msg: Message):
     if not data: return await m.edit("❌ **No results!**")
     
     track = data[0]
-    title, duration = track.get("song"), int(track.get("duration", 0))
+    title = track.get("song", "Unknown Title")
+    duration = int(track.get("duration", 0))
+    # Aapki API 'media_url' bhej rahi hai
     stream_url = track.get("media_url") or track.get("download_url")
     
-    # Thumbnail Logic: Converting 50x50 to 500x500 for HQ Square DP
-    thumb_url = track.get("image", track.get("thumbnail", ""))
+    # --- SQUARE HQ DP LOGIC (Using 'image' from your API) ---
+    thumb_url = track.get("image") or track.get("thumbnail")
     if thumb_url:
+        # 50x50 ya 150x150 ko 500x500 mein badalna taaki Square DP aaye
         thumb_url = thumb_url.replace("50x50", "500x500").replace("150x150", "500x500")
     else:
         thumb_url = "https://files.catbox.moe/cu442f.jpg"
 
-    song_data = {"title": title, "url": stream_url, "duration": duration, "by": user_name, "thumb": thumb_url}
+    song_data = {
+        "title": title, 
+        "url": stream_url, 
+        "duration": duration, 
+        "by": user_name, 
+        "thumb": thumb_url
+    }
 
     if chat_id not in config.queues: 
         config.queues[chat_id] = []
@@ -200,7 +210,7 @@ async def play_cmd(client, msg: Message):
 
         pmp = await bot.send_photo(
             chat_id, 
-            photo=thumb_url, 
+            photo=thumb_url, # Ab ye 500x500 Square DP hai
             caption=caption_text, 
             reply_markup=get_player_buttons(duration)
         )
@@ -212,6 +222,7 @@ async def play_cmd(client, msg: Message):
             return await bot.send_message(chat_id, "❌ **Pehle Voice Chat start karo bhaya!**")
         config.queues[chat_id] = []
         await bot.send_message(chat_id, f"❌ **Error:** {e}")
+
 
 
 
