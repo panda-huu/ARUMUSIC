@@ -1,12 +1,12 @@
 import time
 import psutil
 from datetime import datetime
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
-from ARUMUZIC.clients import bot # Import the actual bot instance
+from ARUMUZIC.clients import bot # Hum is 'bot' ka use karenge
 import config
 
-# Bot kab start hua uske liye ek fallback (agar config mein na ho)
+# Startup fallback
 START_TIME = datetime.now()
 
 def get_readable_time(seconds: int) -> str:
@@ -32,9 +32,10 @@ def get_readable_time(seconds: int) -> str:
     ping_time += ":".join(time_list)
     return ping_time
 
-@Client.on_message(filters.command("ping"))
+# Yahan @Client ki jagah @bot use karo
+@bot.on_message(filters.command("ping") & ~filters.bot)
 async def ping_cmd(client, msg: Message):
-    # Command delete karne ka try
+    # Command delete logic
     try:
         await msg.delete()
     except:
@@ -42,19 +43,16 @@ async def ping_cmd(client, msg: Message):
 
     start_time = time.time()
     
-    # Typing action aur initial message
+    # Message reply
     m = await msg.reply_text("<code>ᴘɪɴɢɪɴɢ..</code>")
     
-    # Latency calculation
-    end_time = time.time()
-    latency = round((end_time - start_time) * 1000, 2)
+    latency = round((time.time() - start_time) * 1000, 2)
     
-    # Uptime calculation (Safe Way)
+    # Uptime fix
     bot_uptime = getattr(config, "BOT_START_TIME", START_TIME)
     uptime_sec = (datetime.now() - bot_uptime).total_seconds()
     uptime = get_readable_time(int(uptime_sec))
     
-    # System Stats
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
     disk = psutil.disk_usage('/').percent
@@ -80,11 +78,14 @@ async def ping_cmd(client, msg: Message):
 
     PING_IMG = "https://files.catbox.moe/nacfzm.jpg" 
     
-    # Pehle wala "Pinging..." delete karo aur naya photo bhejo
-    await m.delete()
-    await client.send_photo(
-        msg.chat.id,
-        photo=PING_IMG,
-        caption=text,
-        reply_markup=buttons
-    )
+    try:
+        await client.send_photo(
+            msg.chat.id,
+            photo=PING_IMG,
+            caption=text,
+            reply_markup=buttons
+        )
+        await m.delete()
+    except:
+        # Fallback agar photo na jaye
+        await m.edit(text, reply_markup=buttons)
