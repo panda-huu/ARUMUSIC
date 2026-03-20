@@ -1,11 +1,12 @@
 import time
 import psutil
 from datetime import datetime
-from pyrogram import Client, filters
+from pyrogram import filters
 from pyrogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
+from ARUMUZIC.clients import bot # Import the specific bot instance
 import config
 
-# Startup fallback variable
+# Global startup time
 START_TIME = datetime.now()
 
 def get_readable_time(seconds: int) -> str:
@@ -31,64 +32,50 @@ def get_readable_time(seconds: int) -> str:
     ping_time += ":".join(time_list)
     return ping_time
 
-@Client.on_message(filters.command("ping") & ~filters.bot)
-async def ping_cmd(client: Client, msg: Message):
-    # Command delete karne ka try karo (Admin permission chahiye)
-    try:
-        await msg.delete()
-    except:
-        pass
-
+# Yahan @bot use karo kyunki main.py mein bot.plugins set kiya hai
+@bot.on_message(filters.command("ping") & ~filters.bot)
+async def ping_cmd(client, message: Message):
     start_time = time.time()
     
-    # Message reply text
-    m = await msg.reply_text("<code>ᴘɪɴɢɪɴɢ..</code>")
+    # Initial reply
+    m = await message.reply_text("<code>ᴘɪɴɢɪɴɢ..</code>")
     
-    # Latency
-    latency = round((time.time() - start_time) * 1000, 2)
+    # Latency & Uptime logic
+    end_time = time.time()
+    ping_ms = round((end_time - start_time) * 1000, 2)
     
-    # Uptime logic (Dono jagah check karega)
+    # Safe Uptime check from config or local START_TIME
     bot_uptime = getattr(config, "BOT_START_TIME", START_TIME)
-    uptime_sec = (datetime.now() - bot_uptime).total_seconds()
-    uptime = get_readable_time(int(uptime_sec))
+    uptime = get_readable_time(int((datetime.now() - bot_uptime).total_seconds()))
     
-    # System Stats
+    # System stats
     cpu = psutil.cpu_percent()
     ram = psutil.virtual_memory().percent
-    disk = psutil.disk_usage('/').percent
-
-    text = (
+    
+    caption = (
         "<b>🏓 ᴘᴏɴɢ! sᴛᴀᴛs ᴀʀᴇ ʜᴇʀᴇ</b>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
-        f"🚀 <b>ʟᴀᴛᴇɴᴄʏ:</b> <code>{latency} ms</code>\n"
+        f"🚀 <b>ʟᴀᴛᴇɴᴄʏ:</b> <code>{ping_ms} ms</code>\n"
         f"🆙 <b>ᴜᴘᴛɪᴍᴇ:</b> <code>{uptime}</code>\n"
         f"💻 <b>ᴄᴘᴜ:</b> <code>{cpu}%</code>\n"
         f"📊 <b>ʀᴀᴍ:</b> <code>{ram}%</code>\n"
-        f"💾 <b>ᴅɪsᴋ:</b> <code>{disk}%</code>\n"
         "━━━━━━━━━━━━━━━━━━━━\n"
         "👤 <b>ᴏᴡɴᴇʀ:</b> <a href='https://t.me/sxyaru'>ᴀʀᴜ × ᴀᴘɪ [ʙᴏᴛs]</a>"
     )
-
-    buttons = InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru"),
-            InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/ll_PANDA_BBY_ll")
-        ]
-    ])
-
-    PING_IMG = "https://files.catbox.moe/nacfzm.jpg" 
     
+    buttons = InlineKeyboardMarkup([[
+        InlineKeyboardButton("sᴜᴘᴘᴏʀᴛ", url="https://t.me/sxyaru"),
+        InlineKeyboardButton("ᴅᴇᴠᴇʟᴏᴘᴇʀ", url="https://t.me/ll_PANDA_BBY_ll")
+    ]])
+
     try:
-        # Photo bhejte hain
         await client.send_photo(
-            msg.chat.id,
-            photo=PING_IMG,
-            caption=text,
+            message.chat.id,
+            photo="https://files.catbox.moe/nacfzm.jpg",
+            caption=caption,
             reply_markup=buttons
         )
-        # Purana "Pinging..." text delete kar do
         await m.delete()
     except Exception as e:
-        # Agar photo fail ho toh text edit kar do
         print(f"Ping Error: {e}")
-        await m.edit(text, reply_markup=buttons)
+        await m.edit(caption, reply_markup=buttons)
