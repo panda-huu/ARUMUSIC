@@ -63,7 +63,20 @@ async def play_next(chat_id: int):
 
 @call.on_stream_end()
 async def stream_end_handler(client, update):
-    await play_next(update.chat_id)
+    chat_id = update.chat_id
+    
+    # Check karo agar queue mein aur gaane hain (Current ko chhod kar)
+    if chat_id in config.queues and len(config.queues[chat_id]) > 1:
+        # Agla gaana bajao
+        await play_next(chat_id)
+    else:
+        # Agar koi gaana nahi bacha, toh sab saaf karo
+        try:
+            config.queues[chat_id] = [] # Queue reset
+            await call.leave_group_call(chat_id)
+        except:
+            pass
+
 
 async def update_timer(chat_id, message_id, duration):
     start_time = time.time()
