@@ -1,7 +1,4 @@
-pyrogram
-pytgcalls[ffmpeg]
-yt-dlp
-youtube-search-python
-beautifulsoup4
 aiohttp
-
+pyrogram==2.0.106
+tgcrypto
+py-tgcalls==0.9.7
