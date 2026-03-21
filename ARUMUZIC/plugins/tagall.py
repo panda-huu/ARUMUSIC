@@ -3,58 +3,35 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatMemberStatus
 
-# Global dictionary to track stop status
-TAG_STOP = {}
-
-# Command filters mein '/' aur '!' dono allow kar diye
-@Client.on_message(filters.command(["tagall", "utag"], prefixes=["/", "!", ""]) & filters.group)
-async def tag_all_members(client: Client, message: Message):
+@Client.on_message(filters.command(["tagall", "utag"], prefixes=["/", "!", ""]))
+async def tag_test(client: Client, message: Message):
+    # Sirf ye check karne ke liye ki bot active hai
+    print(f"Command received in: {message.chat.title}") 
+    
     chat_id = message.chat.id
     
-    # Check if bot is Admin (Zaroori hai members list ke liye)
-    bot_obj = await client.get_chat_member(chat_id, "me")
-    if bot_obj.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-        return await message.reply("❌ **ʙᴏᴛ ᴍᴜsᴛ ʙᴇ ᴀᴅᴍɪɴ ᴛᴏ ᴛᴀɢ ᴍᴇᴍʙᴇʀs!**")
-
-    # Tag message
-    tag_text = "ʜᴇʏ, ᴡᴀᴋᴇ ᴜᴘ!"
-    if len(message.command) > 1:
-        tag_text = message.text.split(None, 1)[1]
-
-    TAG_STOP[chat_id] = False
-    await message.reply(f"✨ **ᴛᴀɢɢɪɴɢ sᴛᴀʀᴛᴇᴅ...**\n`Use /cancel to stop.`")
+    # 1. Simple Reply Test
+    m = await message.reply("⚡ **ᴛᴀɢɢɪɴɢ sᴛᴀʀᴛᴇᴅ...**")
     
-    usertxt = ""
-    count = 0
-
+    # 2. Members fetch logic
     try:
-        async for member in client.get_chat_members(chat_id):
-            if TAG_STOP.get(chat_id):
-                break
-            
+        count = 0
+        usertxt = ""
+        
+        # Limit 50 rakha hai test ke liye
+        async for member in client.get_chat_members(chat_id, limit=50):
             if member.user.is_bot or member.user.is_deleted:
                 continue
-
-            # Har member ka link banaya
+            
             usertxt += f"[{member.user.first_name}](tg://user?id={member.user.id}) "
             count += 1
-
-            # Har 5 members par message bhejo
+            
             if count % 5 == 0:
-                await client.send_message(chat_id, f"📢 **{tag_text}**\n\n{usertxt}")
-                await asyncio.sleep(3) # Flood wait se bachne ke liye gap
+                await client.send_message(chat_id, f"📢 **ᴡᴀᴋᴇ ᴜᴘ!**\n\n{usertxt}")
+                await asyncio.sleep(2)
                 usertxt = ""
-
-        # Last batch agar 5 se kam members bache hon toh
-        if usertxt and not TAG_STOP.get(chat_id):
-            await client.send_message(chat_id, f"📢 **{tag_text}**\n\n{usertxt}")
-
+        
+        await message.reply(f"✅ **ᴅᴏɴᴇ!** ᴛᴀɢɢᴇᴅ: `{count}`")
+        
     except Exception as e:
-        await message.reply(f"❌ **Error:** `{e}`")
-
-    TAG_STOP[chat_id] = False
-
-@Client.on_message(filters.command(["cancel", "stopall"], prefixes=["/", "!", ""]) & filters.group)
-async def stop_tagging(client, message: Message):
-    TAG_STOP[message.chat.id] = True
-    await message.reply("⏳ **sᴛᴏᴘᴘɪɴɢ...**")
+        await message.reply(f"❌ **ᴇʀʀᴏʀ:** `{e}`\n\n*Make sure I am Admin!*")
