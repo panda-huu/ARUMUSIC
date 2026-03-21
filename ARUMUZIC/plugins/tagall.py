@@ -3,64 +3,73 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from pyrogram.enums import ChatMemberStatus
 
-# Ek list taaki hum tag stop kar sakein
-TAG_STOP = []
+# Global dictionary to track stop status
+TAG_STOP = {}
 
 @Client.on_message(filters.command(["tagall", "utag"]) & filters.group)
 async def tag_all_members(client: Client, message: Message):
     chat_id = message.chat.id
-    
-    # Check if user is Admin
-    user = await client.get_chat_member(chat_id, message.from_user.id)
-    if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
-        return await message.reply("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs!**")
+    user_id = message.from_user.id
 
-    # Tag message extract
-    if len(message.command) < 2:
-        tag_text = "ʜᴇʏ, ᴡᴀᴋᴇ ᴜᴘ!"
-    else:
+    # --- ADMIN CHECK ---
+    try:
+        user = await client.get_chat_member(chat_id, user_id)
+        if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
+            return await message.reply("❌ **ᴏɴʟʏ ᴀᴅᴍɪɴs ᴄᴀɴ ᴜsᴇ ᴛʜɪs!**")
+    except Exception:
+        return # Agar bot admin list fetch na kar paye
+
+    # --- TAG TEXT ---
+    tag_text = "ʜᴇʏ, ᴡᴀᴋᴇ ᴜᴘ!"
+    if len(message.command) > 1:
         tag_text = message.text.split(None, 1)[1]
 
-    if chat_id in TAG_STOP:
-        TAG_STOP.remove(chat_id)
+    # Set stop status for this chat to False
+    TAG_STOP[chat_id] = False
 
-    m = await message.reply("✨ **ᴛᴀɢɢɪɴɢ sᴛᴀʀᴛᴇᴅ...**\n`Use /cancel to stop.`")
+    await message.reply(f"✨ **ᴛᴀɢɢɪɴɢ sᴛᴀʀᴛᴇᴅ...**\n`Query: {tag_text}`\n`Use /cancel to stop.`")
     
-    # Saare members nikalne ke liye
-    members = []
-    async for member in client.get_chat_members(chat_id):
-        if not member.user.is_bot: # Bots ko tag nahi karenge
-            members.append(member.user.mention)
-
-    # 5-5 members ka batch banayenge taaki Spam na lage
+    # --- TAGGING LOGIC (REAL-TIME) ---
+    usertxt = ""
     count = 0
-    text = f"📢 **{tag_text}**\n\n"
-    
-    for i in range(0, len(members), 5):
-        if chat_id in TAG_STOP:
-            break
-            
-        batch = members[i:i+5]
-        tag_line = f"{text}" + " ".join(batch)
-        
-        await client.send_message(chat_id, tag_line)
-        count += len(batch)
-        
-        # 3 second ka gap taaki bot ban na ho (Flood wait safety)
-        await asyncio.sleep(3)
 
-    if chat_id in TAG_STOP:
-        TAG_STOP.remove(chat_id)
+    async for member in client.get_chat_members(chat_id):
+        # Stop check
+        if TAG_STOP.get(chat_id):
+            break
+        
+        # Bots aur Deleted accounts ko skip karo
+        if member.user.is_bot or member.user.is_deleted:
+            continue
+
+        # Tag format
+        usertxt += f"[{member.user.first_name}](tg://user?id={member.user.id}) "
+        count += 1
+
+        # 5 members hote hi message send karo
+        if count % 5 == 0:
+            try:
+                await client.send_message(chat_id, f"📢 **{tag_text}**\n\n{usertxt}")
+                await asyncio.sleep(2) # Flood wait safety
+                usertxt = "" # Text reset for next batch
+            except Exception:
+                pass
+
+    # Cleanup
+    if TAG_STOP.get(chat_id):
         await message.reply(f"🚫 **ᴛᴀɢɢɪɴɢ sᴛᴏᴘᴘᴇᴅ!**\nᴛᴏᴛᴀʟ ᴛᴀɢɢᴇᴅ: `{count}`")
     else:
         await message.reply(f"✅ **ᴀʟʟ ᴍᴇᴍʙᴇʀs ᴛᴀɢɢᴇᴅ!**\nᴛᴏᴛᴀʟ: `{count}`")
+    
+    TAG_STOP[chat_id] = False
 
 @Client.on_message(filters.command(["cancel", "stopall"]) & filters.group)
 async def stop_tagging(client, message: Message):
-    # Admin check for cancel too
-    user = await client.get_chat_member(message.chat.id, message.from_user.id)
+    chat_id = message.chat.id
+    # Admin check for cancel
+    user = await client.get_chat_member(chat_id, message.from_user.id)
     if user.status not in [ChatMemberStatus.ADMINISTRATOR, ChatMemberStatus.OWNER]:
         return
         
-    TAG_STOP.append(message.chat.id)
+    TAG_STOP[chat_id] = True
     await message.reply("⏳ **sᴛᴏᴘᴘɪɴɢ ᴛᴀɢɢᴀʟʟ...**")
