@@ -1,4 +1,4 @@
-ppyrogram
+pyrogram
 pytgcalls[ffmpeg]
 yt-dlp
 youtube-search-python
